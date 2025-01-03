@@ -1,0 +1,18 @@
+env: "local"  
+tokenTtl: "1h"
+
+sso:
+  grpc:  
+    port: 44044  
+    timeout: 10h
+
+db:
+  storagePath: "db/storage/sso.db"  
+  migrationPath: "db/migration"
+  migrationTable: "migration"
+
+
+logger:
+  level: "info"
+  file: "out.log"
+
