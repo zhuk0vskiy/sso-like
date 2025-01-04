@@ -27,7 +27,7 @@ func (s *UserStorage) Insert(ctx context.Context, request *dto.InsertUserRequest
 	}
 
 	// Выполняем запрос, передав параметры
-	res, err := stmt.ExecContext(ctx, request.Email, request.PassHash)
+	res, err := stmt.ExecContext(ctx, request.Email, request.Password)
 	if err != nil {
 		// var sqliteErr sqlite3.Error
 
@@ -49,24 +49,24 @@ func (s *UserStorage) Insert(ctx context.Context, request *dto.InsertUserRequest
 	return id, nil
 }
 
-func (s *UserStorage) Get(ctx context.Context, request *dto.GetUserRequest) (model.User, error) {
+func (s *UserStorage) Get(ctx context.Context, request *dto.GetUserRequest) (*model.User, error) {
 	const op = "storage.sqlite.User"
 
 	stmt, err := s.db.Prepare("SELECT id, email, pass_hash FROM users WHERE email = ?")
 	if err != nil {
-		return model.User{}, fmt.Errorf("%s: %w", op, err)
+		return &model.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	row := stmt.QueryRowContext(ctx, request.Email)
 
-	var user model.User
-	err = row.Scan(&user.Id, &user.Email, &user.PassHash)
+	var user *model.User
+	err = row.Scan(&user.Id, &user.Email, &user.Password)
 	if err != nil {
 		// if errors.Is(err, sql.ErrNoRows) {
 		// 	return model.User{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 		// }
 
-		return model.User{}, fmt.Errorf("%s: %w", op, err)
+		return &model.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return user, nil

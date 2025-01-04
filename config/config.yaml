@@ -7,10 +7,18 @@ sso:
     timeout: 10h
 
 db:
-  storagePath: "db/storage/sso.db"  
-  migrationPath: "db/migration"
-  migrationTable: "migration"
+  sqlite:
+    storagePath: "db/storage/sso.db"  
+    migrationPath: "db/migration"
+    migrationTable: "migration"
 
+  postgres:
+    host: 'localhost'
+    port: 5432
+    user: 'sso_user'
+    password: 'sso_pass'
+    database: 'sso_db'
+    driver: 'postgres'
 
 logger:
   level: "info"

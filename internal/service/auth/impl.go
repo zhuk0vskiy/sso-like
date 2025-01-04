@@ -2,55 +2,83 @@ package auth
 
 import (
 	"context"
+	"fmt"
 
 	dtoService "sso-like/internal/service/dto"
 	dtoStorage "sso-like/internal/storage/dto"
-	appStorage "sso-like/internal/storage/sqlite/app"
-	userStorage "sso-like/internal/storage/sqlite/user"
+
+	// appStorage "sso-like/internal/storage/sqlite/app"
+	userStorage "sso-like/internal/storage/postgres/user"
+	"sso-like/pkg/crypt"
 	"sso-like/pkg/jwt"
 	"sso-like/pkg/logger"
 	"time"
+
+	"github.com/pquerna/otp/totp"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
-	log         *logger.Logger
+	logger         logger.Interface
 	userStorage userStorage.UserInterface
-	appStorage  appStorage.AppInterface
-
-	tokenTTL time.Duration
+	// appStorage  appStorage.AppInterface
 }
 
-func NewAuthService(log *logger.Logger, userStrg userStorage.UserInterface, appStrg appStorage.AppInterface, tokenTTL time.Duration) *AuthService {
+func NewAuthService(logger logger.Interface, userStrg userStorage.UserInterface) *AuthService {
 	return &AuthService{
-		log:         log,
+		logger:         logger,
 		userStorage: userStrg,
-		appStorage:  appStrg,
-		tokenTTL:    tokenTTL,
+		// appStorage:  appStrg,
 	}
 }
 
-func (a *AuthService) SignUp(ctx context.Context, request *dtoService.SignUpRequest) (int64, error) {
+func (a *AuthService) SignUp(ctx context.Context, request *dtoService.SignUpRequest) (string, error) {
 
+	if request.Email == "" {
+		a.logger.Errorf("email is empty")
+		return "", fmt.Errorf("email is empty")
+	}
+
+	if request.Password == "" {
+		a.logger.Errorf("password is empty")
+		return "", fmt.Errorf("password is empty")
+	}
+
+	totp, err := totp.Generate(totp.GenerateOpts{
+		Issuer: "sso",
+		AccountName: request.Email,
+	})
+	if err != nil {
+		a.logger.Errorf("failed to generate topt: %w", err)
+		return "", err
+	}
 
 	passHash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
 
 	if err != nil {
-		a.log.Errorf("failed to generate password hash: %w", err)
-		return 0, err
+		a.logger.Errorf("failed to generate password hash: %w", err)
+		return "", err
 	}
 
-	id, err := a.userStorage.Insert(ctx, &dtoStorage.InsertUserRequest{
-		PassHash: passHash,
+	totpSecretEncypt, err := crypt.AesEncrypt(crypt.KEY, []byte(totp.Secret()))
+	if err != nil {
+		a.logger.Errorf("failed to encrypt totp secret: %w", err)
+		return "", err
+	}
+
+	err = a.userStorage.Insert(ctx, &dtoStorage.InsertUserRequest{
+		Email:      request.Email,
+		Password:   passHash,
+		TotpSecret: totpSecretEncypt,
 	})
 	if err != nil {
-		a.log.Errorf("failed to save user: %w", err)
+		a.logger.Errorf("failed to save user: %w", err)
 
-		return 0, err
+		return "", err
 	}
-
-	return id, nil
+	fmt.Println(totp.URL())
+	return totp.Secret(), nil
 }
 
 func (a *AuthService) LogIn(ctx context.Context, request *dtoService.LogInRequest) (string, error) {
@@ -59,30 +87,42 @@ func (a *AuthService) LogIn(ctx context.Context, request *dtoService.LogInReques
 		Email: request.Email,
 	})
 	if err != nil {
-		a.log.Errorf("failed to get user: %w", err)
+		a.logger.Errorf("failed to get user: %w", err)
 
 		return "", err
 	}
 
-	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(request.Password)); err != nil {
-		a.log.Infof("invalid credentials: %w", err)
-
-		return "", err
-	}
-
-	app, err := a.appStorage.Get(ctx, &dtoStorage.GetAppRequest{
-		Id: request.AppId,
-	})
+	err = bcrypt.CompareHashAndPassword(user.Password, []byte(request.Password))
 	if err != nil {
-		a.log.Errorf("failed to get app: %w", err)
+		a.logger.Infof("invalid credentials: %w", err)
+
 		return "", err
 	}
 
-	a.log.Infof("user logged in successfully")
-
-	token, err := jwt.NewToken(user, app, a.tokenTTL)
+	totpSecret, err := crypt.AesDecrypt(crypt.KEY, user.TotpSecret)
 	if err != nil {
-		a.log.Errorf("failed to generate token", err)
+		a.logger.Errorf("failed to decrypt totp secret: %w", err)
+		return "", err
+	}
+
+		// app, err := a.appStorage.Get(ctx, &dtoStorage.GetAppRequest{
+		// 	Id: request.AppId,
+		// })
+		// if err != nil {
+		// 	a.log.Errorf("failed to get app: %w", err)
+		// 	return "", err
+		// }
+
+		// a.log.Infof("user logged in successfully")
+
+	if !totp.Validate(request.Token, string(totpSecret)) {
+		a.logger.Infof("invalid token")
+		return "", err
+	}
+
+	token, err := jwt.NewToken(user, 1 * time.Hour)
+	if err != nil {
+		a.logger.Errorf("failed to generate token", err)
 
 		return "", err
 	}

@@ -19,14 +19,28 @@ type Config struct {
 	TokenTTL time.Duration `yaml:"tokenTtl" env-default:"1h"`
 }
 
+type PostgresConfig struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	User     string `yaml:"username"`
+	Password string `yaml:"password"`
+	Database string `yaml:"database"`
+	Driver   string `yaml:"driver"`
+}
+
 type SSOConfig struct {
 	GRPC GRPCConfig `yaml:"grpc"`
 }
 
-type DBConfig struct {
+type SqliteConfig struct {
 	StoragePath    string `yaml:"storagePath" env-required:"true"`
 	MigrationPath  string `yaml:"migrationPath"`
 	MigrationTable string `yaml:"migrationTable"`
+}
+
+type DBConfig struct {
+	Postgres PostgresConfig `yaml:"postgres"`
+	Sqlite   SqliteConfig   `yaml:"sqlite"`
 }
 
 type GRPCConfig struct {

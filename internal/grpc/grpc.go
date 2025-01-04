@@ -20,12 +20,12 @@ func Register(gRPCServer *grpc.Server, auth authService.AuthInterface) {
 }
 
 type GrpcApp struct {
-	log        logger.Logger
+	log        logger.Interface
 	gRPCServer *grpc.Server
 	port       int
 }
 
-func NewGrpcApp(log *logger.Logger, authIntf authService.AuthInterface, port int) *GrpcApp {
+func NewGrpcApp(log logger.Interface, authIntf authService.AuthInterface, port int) *GrpcApp {
 	// recoveryOpts := []recovery.Option{
 	// 	recovery.WithRecoveryHandler(func(p interface{}) (err error) {
 	// 		// Логируем информацию о панике с уровнем Error
@@ -45,13 +45,13 @@ func NewGrpcApp(log *logger.Logger, authIntf authService.AuthInterface, port int
 
 	gRPCServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
 		// recovery.UnaryServerInterceptor(recoveryOpts...),
-		logging.UnaryServerInterceptor(logger.InterceptorLogger(*log), loggingOpts...),
+		logging.UnaryServerInterceptor(logger.InterceptorLogger(log), loggingOpts...),
 	))
 
 	Register(gRPCServer, authIntf)
 
 	return &GrpcApp{
-		log:        *log,
+		log:        log,
 		gRPCServer: gRPCServer,
 		port:       port,
 	}

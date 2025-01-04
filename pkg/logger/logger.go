@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.42.1 --name=Interface
 type Interface interface {
 	Debugf(message string, args ...interface{})
 	Infof(message string, args ...interface{})
@@ -69,7 +70,7 @@ func (l *Logger) Fatalf(message string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func InterceptorLogger(l Logger) logging.Logger {
+func InterceptorLogger(l Interface) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
 		l.Infof(msg)
 	})

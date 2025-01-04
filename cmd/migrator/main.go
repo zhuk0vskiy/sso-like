@@ -26,8 +26,8 @@ func main() {
 
 	// Создаем объект мигратора, передав креды нашей БД
 	m, err := migrate.New(
-		"file://"+cfg.DB.MigrationPath,
-		fmt.Sprintf("sqlite3://%s?x-migrations-table=%s", cfg.DB.StoragePath, cfg.DB.MigrationTable),
+		"file://"+cfg.DB.Sqlite.MigrationPath,
+		fmt.Sprintf("sqlite3://%s?x-migrations-table=%s", cfg.DB.Sqlite.StoragePath, cfg.DB.Sqlite.MigrationTable),
 	)
 	if err != nil {
 		panic(err)

@@ -69,24 +69,33 @@ func main() {
 
 	grpcClient := ssov1.NewAuthClient(conn)
 
-	// client := pb.NewReverseClient(conn)
-	req := &ssov1.SignUpRequest{
-		Email:    "1",
-		Password: "1",
-	}
-	// request := &pb.Request{
-	//     Message: args[1],
-	// }
-	response, err := grpcClient.SignUp(context.Background(), req)
-	// response, err := client.Do(context.Background(), request)
 
+	// req := &ssov1.SignUpRequest{
+	// 	Email:    "a",
+	// 	Password: "1",
+	// }
+
+	// response, err := grpcClient.SignUp(context.Background(), req)
+
+	// if err != nil {
+	// 	fmt.Printf("fail to dial: %v", err)
+	// 	return
+	// }
+
+	// fmt.Println(response.TotpSecret)
+
+	reqq := &ssov1.LogInRequest{
+		Email: "a",
+		Password: "1",
+		Token: "829219",
+	}
+	ress, err := grpcClient.LogIn(context.Background(), reqq)
 	if err != nil {
 		fmt.Printf("fail to dial: %v", err)
 		return
 	}
 
-	fmt.Println(response.UserId)
-
+	fmt.Println(ress.Token)
 	// reqq := &ssov1.LogInRequest{
 	// 	Email:    "1",
 	// 	Password: "1",

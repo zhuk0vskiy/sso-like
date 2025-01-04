@@ -8,5 +8,5 @@ type SignUpRequest struct {
 type LogInRequest struct {
 	Email    string
 	Password string
-	AppId    int64
+	Token    string
 }

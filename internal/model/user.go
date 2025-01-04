@@ -1,7 +1,10 @@
 package model
 
+import "github.com/google/uuid"
+
 type User struct {
-	Id       int64
-	Email    string
-	PassHash []byte
+	Id         uuid.UUID
+	Email      string
+	Password   []byte
+	TotpSecret []byte
 }

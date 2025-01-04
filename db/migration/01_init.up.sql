@@ -1,12 +1,13 @@
 CREATE TABLE IF NOT EXISTS users(
-    id           integer primary key not null,
+    id           uuid primary key default gen_random_uuid(),
     email        TEXT    NOT NULL UNIQUE,
-    pass_hash    BLOB    NOT NULL
+    password    bytea    NOT NULL,
+    totp_secret bytea NOT NULL UNIQUE
 );
 CREATE INDEX IF NOT EXISTS idx_email ON users (email);
 
 CREATE TABLE IF NOT EXISTS apps(
-    id     integer primary key not null,
+    id     uuid primary key default gen_random_uuid(),
     name   TEXT NOT NULL UNIQUE,
     secret TEXT NOT NULL UNIQUE
 );

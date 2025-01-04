@@ -6,6 +6,6 @@ import (
 )
 
 type AuthInterface interface {
-	SignUp(ctx context.Context, request *dto.SignUpRequest) (int64, error)
+	SignUp(ctx context.Context, request *dto.SignUpRequest) (string, error)
 	LogIn(ctx context.Context, request *dto.LogInRequest) (string, error)
 }

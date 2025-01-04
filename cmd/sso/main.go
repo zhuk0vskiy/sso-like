@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"sso-like/config"
 	"sso-like/internal/app"
 	"sso-like/internal/grpc"
-	"sso-like/internal/storage/sqlite"
+	"sso-like/internal/storage"
 	"sso-like/pkg/logger"
 )
 
@@ -37,8 +38,9 @@ func main() {
 
 	log := logger.New(cfg.Logger.Level, loggerFile)
 
-	fmt.Println("trying to create db")
-	dbConnector, err := sqlite.NewSqliteDb(cfg.DB.StoragePath)
+	fmt.Println("trying to connect db")
+	ctx := context.Background()
+	dbConnector, err := storage.NewDbConn(ctx, &cfg.DB.Postgres)
 	if err != nil {
 
 		fmt.Printf("cannot connect to db", err)
@@ -46,6 +48,7 @@ func main() {
 	}
 
 	a := app.NewApp(log, dbConnector, cfg.SSO.GRPC.Port, cfg.TokenTTL)
-	
+
+
 	grpc.Run(a.GrpcApp)
 }
