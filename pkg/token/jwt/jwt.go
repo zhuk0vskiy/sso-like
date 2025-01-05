@@ -17,7 +17,6 @@ func NewToken(user *model.User, duration time.Duration) (string, error) {
 	claims["email"] = user.Email
 	claims["exp"] = time.Now().Add(duration).Unix()
 
-	// Подписываем токен, используя секретный ключ приложения
 	tokenString, err := token.SignedString([]byte(JWTKey))
 	if err != nil {
 		return "", err

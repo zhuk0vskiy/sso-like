@@ -7,10 +7,9 @@ import (
 	dtoService "sso-like/internal/service/dto"
 	dtoStorage "sso-like/internal/storage/dto"
 
-	// appStorage "sso-like/internal/storage/sqlite/app"
 	userStorage "sso-like/internal/storage/postgres/user"
 	"sso-like/pkg/crypt"
-	"sso-like/pkg/jwt"
+	"sso-like/pkg/token/paseto"
 	"sso-like/pkg/logger"
 	"time"
 
@@ -22,14 +21,13 @@ import (
 type AuthService struct {
 	logger         logger.Interface
 	userStorage userStorage.UserInterface
-	// appStorage  appStorage.AppInterface
+
 }
 
 func NewAuthService(logger logger.Interface, userStrg userStorage.UserInterface) *AuthService {
 	return &AuthService{
 		logger:         logger,
 		userStorage: userStrg,
-		// appStorage:  appStrg,
 	}
 }
 
@@ -92,9 +90,16 @@ func (a *AuthService) LogIn(ctx context.Context, request *dtoService.LogInReques
 		return "", err
 	}
 
+	if request.Email != user.Email {
+		a.logger.Infof("invalid email credentials")
+
+		return "", fmt.Errorf("invalid email credentials")
+	}
+	
+
 	err = bcrypt.CompareHashAndPassword(user.Password, []byte(request.Password))
 	if err != nil {
-		a.logger.Infof("invalid credentials: %w", err)
+		a.logger.Infof("invalid password credentials: %w", err)
 
 		return "", err
 	}
@@ -117,13 +122,19 @@ func (a *AuthService) LogIn(ctx context.Context, request *dtoService.LogInReques
 
 	if !totp.Validate(request.Token, string(totpSecret)) {
 		a.logger.Infof("invalid token")
-		return "", err
+		return "", fmt.Errorf("invalid token")
 	}
 
-	token, err := jwt.NewToken(user, 1 * time.Hour)
+	pasetoStruct, err := paseto.NewPaseto(paseto.KEY)
 	if err != nil {
-		a.logger.Errorf("failed to generate token", err)
+		a.logger.Errorf("failed to generate paseto struct", err)
+		return "", err
+	}
+	token, err := pasetoStruct.CreateToken(request.Email, 1 * time.Hour)
 
+	// token, err := pas.NewToken(user, 1 * time.Hour)
+	if err != nil {
+		a.logger.Errorf("failed to generate paseto token", err)
 		return "", err
 	}
 

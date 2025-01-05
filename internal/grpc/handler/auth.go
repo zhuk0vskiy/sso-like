@@ -59,7 +59,7 @@ func (s *ServerApi) SignUp(ctx context.Context, in *ssov1.SignUpRequest) (*ssov1
 		return nil, status.Error(codes.InvalidArgument, "password is required")
 	}
 
-	totpSecret, totpUrl, err := s.Auth.SignUp(ctx, &dtoService.SignUpRequest{
+	totpSecret, err := s.Auth.SignUp(ctx, &dtoService.SignUpRequest{
 		Email:    in.GetEmail(),
 		Password: in.GetPassword(),
 	})
@@ -74,6 +74,6 @@ func (s *ServerApi) SignUp(ctx context.Context, in *ssov1.SignUpRequest) (*ssov1
 
 	return &ssov1.SignUpResponse{
 		TotpSecret: totpSecret,
-		TotpUrl:    totpUrl,
+		TotpUrl:    "",
 	}, nil
 }
